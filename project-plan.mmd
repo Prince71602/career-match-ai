@@ -1,0 +1,19 @@
+flowchart TD
+    A[User uploads resume] --> B[Resume parsing]
+    B --> C[AI resume structuring]
+    C --> D[User pastes job description]
+    D --> E[AI job extraction]
+    E --> F[Normalize requirements]
+    F --> G[Comparison engine]
+    G --> H[Evidence-based analysis]
+    H --> I[Results dashboard]
+
+    subgraph MVP[CareerMatch AI MVP]
+        B
+        C
+        E
+        F
+        G
+        H
+        I
+    end
