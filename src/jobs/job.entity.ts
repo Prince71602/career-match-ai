@@ -22,6 +22,9 @@ export class JobRequirements {
 
 @Schema({ timestamps: true, collection: 'jobs' })
 export class JobEntity {
+  @Prop({ type: String, required: true, index: true })
+  userId!: string;
+
   @Prop({ type: String, required: true, unique: true, index: true })
   id!: string;
 
@@ -31,12 +34,13 @@ export class JobEntity {
   @Prop({ type: String, default: null })
   company!: string | null;
 
-  @Prop({ required: true })
+  @Prop({ type: String, required: true })
   rawText!: string;
 
   @Prop({ type: Object, required: true })
   requirements!: JobRequirements;
 
+  @Prop({ type: Date, default: Date.now })
   createdAt?: Date;
 }
 

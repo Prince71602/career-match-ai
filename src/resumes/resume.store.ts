@@ -43,11 +43,12 @@ export class MongoResumeStore implements ResumeStore {
   private toRecord(document: ResumeDocument): ResumeRecord {
     return {
       id: document.id,
+      userId: document.userId,
       fileName: document.fileName,
       fileType: document.fileType,
       rawText: document.rawText,
       createdAt: document.createdAt?.toISOString() ?? new Date().toISOString(),
-      candidateProfile: null,
+      candidateProfile: document.candidateProfile,
     };
   }
 }

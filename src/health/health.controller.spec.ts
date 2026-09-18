@@ -1,7 +1,5 @@
 import { INestApplication } from '@nestjs/common';
-import { Test } from '@nestjs/testing';
 import request = require('supertest');
-import { AppModule } from '../app.module';
 import { createApp } from '../main';
 
 describe('Health endpoint', () => {

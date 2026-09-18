@@ -1,0 +1,1 @@
+export const resumeExtractionPrompt = `Extract only information explicitly supported by the supplied resume. Do not infer skills or experience. Return JSON matching the requested schema. Use null or [] when information is missing.`;

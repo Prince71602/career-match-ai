@@ -42,6 +42,7 @@ export class MongoJobStore implements JobStore {
   private toRecord(document: JobDocument): JobRecord {
     return {
       id: document.id,
+      userId: document.userId,
       title: document.title,
       company: document.company,
       rawText: document.rawText,

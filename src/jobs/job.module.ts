@@ -5,9 +5,13 @@ import { JobEntity, JobSchema } from './job.entity';
 import { jobStoreProvider } from './job.providers';
 import { JobService } from './job.service';
 import { JOB_STORE } from './job.store';
+import { AuthModule } from '../auth/auth.module';
+import { AiModule } from '../ai/ai.module';
 
 @Module({
   imports: [
+    AuthModule,
+    AiModule,
     ...(process.env.MONGODB_URI ? [MongooseModule.forFeature([{ name: JobEntity.name, schema: JobSchema }])] : []),
   ],
   controllers: [JobController],

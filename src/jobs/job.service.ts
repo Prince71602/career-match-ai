@@ -2,10 +2,13 @@ import { BadRequestException, Inject, Injectable, NotFoundException } from '@nes
 import { randomUUID } from 'node:crypto';
 import { JobRequirements, JobSkill } from '../comparison/comparison.service';
 import { SkillNormalizer } from '../comparison/skill-normalizer';
-import { JOB_STORE, JobStore } from './job.store';
+import { JOB_STORE } from './job.store';
+import type { JobStore } from './job.store';
+import { AiService } from '../ai/ai.service';
 
 export interface JobRecord {
   id: string;
+  userId: string;
   title: string | null;
   company: string | null;
   rawText: string;
@@ -17,9 +20,12 @@ export interface JobRecord {
 export class JobService {
   private readonly normalizer = new SkillNormalizer();
 
-  constructor(@Inject(JOB_STORE) private readonly jobStore: JobStore) {}
+  constructor(
+    @Inject(JOB_STORE) private readonly jobStore: JobStore,
+    @Inject(AiService) private readonly aiService: AiService,
+  ) {}
 
-  async create(body?: { description?: string }) {
+  async create(userId: string, body?: { description?: string }) {
     const description = body?.description?.trim();
 
     if (!description) {
@@ -28,10 +34,11 @@ export class JobService {
 
     const job: JobRecord = {
       id: randomUUID(),
+      userId,
       title: this.extractTitle(description),
       company: null,
       rawText: description,
-      requirements: this.extractRequirements(description),
+      requirements: (await this.aiService.extractJobRequirements(description)) ?? this.extractRequirements(description),
       createdAt: new Date().toISOString(),
     };
 
@@ -44,10 +51,10 @@ export class JobService {
     };
   }
 
-  async findById(id: string): Promise<JobRecord> {
+  async findById(id: string, userId: string): Promise<JobRecord> {
     const job = await this.jobStore.findById(id);
 
-    if (!job) {
+    if (!job || job.userId !== userId) {
       throw new NotFoundException('Job not found.');
     }
 

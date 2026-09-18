@@ -1,25 +1,30 @@
 import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { DocumentParserService } from './parsers/document-parser.service';
-import { RESUME_STORE, ResumeStore } from './resume.store';
+import { RESUME_STORE } from './resume.store';
+import type { ResumeStore } from './resume.store';
+import { AiService } from '../ai/ai.service';
+import type { CandidateProfile } from '../comparison/comparison.service';
 
 export interface ResumeRecord {
   id: string;
+  userId: string;
   fileName: string;
   fileType: 'pdf' | 'docx';
   rawText: string;
   createdAt: string;
-  candidateProfile: null;
+  candidateProfile: CandidateProfile | null;
 }
 
 @Injectable()
 export class ResumeService {
   constructor(
-    private readonly documentParser: DocumentParserService,
+    @Inject(DocumentParserService) private readonly documentParser: DocumentParserService,
     @Inject(RESUME_STORE) private readonly resumeStore: ResumeStore,
+    @Inject(AiService) private readonly aiService: AiService,
   ) {}
 
-  async create(file?: Express.Multer.File) {
+  async create(userId: string, file?: Express.Multer.File) {
     if (!file?.buffer) {
       throw new BadRequestException('A resume file is required.');
     }
@@ -27,11 +32,12 @@ export class ResumeService {
     const parsed = await this.documentParser.extract(file.buffer);
     const resume: ResumeRecord = {
       id: randomUUID(),
+      userId,
       fileName: file.originalname,
       fileType: parsed.type,
       rawText: parsed.text,
       createdAt: new Date().toISOString(),
-      candidateProfile: null,
+      candidateProfile: await this.aiService.extractResumeProfile(parsed.text),
     };
 
     await this.resumeStore.create(resume);
@@ -43,10 +49,10 @@ export class ResumeService {
     };
   }
 
-  async findById(id: string): Promise<ResumeRecord> {
+  async findById(id: string, userId: string): Promise<ResumeRecord> {
     const resume = await this.resumeStore.findById(id);
 
-    if (!resume) {
+    if (!resume || resume.userId !== userId) {
       throw new NotFoundException('Resume not found.');
     }
 

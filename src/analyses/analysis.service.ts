@@ -1,8 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { ComparisonService, SkillMatch } from '../comparison/comparison.service';
 import { SkillNormalizer } from '../comparison/skill-normalizer';
 import { ResumeService } from '../resumes/resume.service';
 import { JobService } from '../jobs/job.service';
+import { ANALYSIS_STORE } from './analysis.store';
+import type { AnalysisStore } from './analysis.store';
 
 export interface AnalysisInput {
   resumeId: string;
@@ -14,13 +16,14 @@ export class AnalysisService {
   private readonly comparisonService = new ComparisonService(new SkillNormalizer());
 
   constructor(
-    private readonly resumeService: ResumeService,
-    private readonly jobService: JobService,
+    @Inject(ResumeService) private readonly resumeService: ResumeService,
+    @Inject(JobService) private readonly jobService: JobService,
+    @Inject(ANALYSIS_STORE) private readonly analysisStore: AnalysisStore,
   ) {}
 
-  async create({ resumeId, jobId }: AnalysisInput) {
-    const resume = await this.resumeService.findById(resumeId);
-    const job = await this.jobService.findById(jobId);
+  async create(userId: string, { resumeId, jobId }: AnalysisInput) {
+    const resume = await this.resumeService.findById(resumeId, userId);
+    const job = await this.jobService.findById(jobId, userId);
 
     const candidateProfile = resume.candidateProfile ?? {
       fullName: null,
@@ -37,7 +40,7 @@ export class AnalysisService {
 
     const result = this.comparisonService.compare(candidateProfile, job.requirements);
 
-    return {
+    const analysis = {
       id: `${resumeId}-${jobId}`,
       summary: result.summary,
       matchedSkills: result.matchedSkills,
@@ -47,5 +50,25 @@ export class AnalysisService {
       experienceAnalysis: result.experienceAnalysis,
       recommendations: result.recommendations,
     };
+
+    await this.analysisStore.create({
+      id: analysis.id,
+      userId,
+      resumeId,
+      jobId,
+      result: {
+        summary: analysis.summary,
+        matchedSkills: analysis.matchedSkills,
+        relatedSkills: analysis.relatedSkills,
+        missingRequiredSkills: analysis.missingRequiredSkills,
+        missingPreferredSkills: analysis.missingPreferredSkills,
+        experienceAnalysis: analysis.experienceAnalysis,
+        educationAnalysis: result.educationAnalysis,
+        recommendations: analysis.recommendations,
+      },
+      createdAt: new Date().toISOString(),
+    });
+
+    return analysis;
   }
 }

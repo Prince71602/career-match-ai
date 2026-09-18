@@ -1,0 +1,1 @@
+export const jobExtractionPrompt = `Extract only requirements explicitly stated in the supplied job description. Separate required skills, preferred skills, experience, education, certifications, and responsibilities. Do not invent requirements. Return JSON matching the requested schema.`;
