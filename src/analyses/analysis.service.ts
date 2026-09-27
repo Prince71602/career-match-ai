@@ -71,4 +71,13 @@ export class AnalysisService {
 
     return analysis;
   }
+
+  async findByUser(userId: string) {
+    return this.analysisStore.findByUser(userId);
+  }
+
+  async delete(userId: string, analysisId: string) {
+    const deleted = await this.analysisStore.delete(userId, analysisId);
+    return { deleted };
+  }
 }

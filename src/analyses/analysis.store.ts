@@ -16,6 +16,8 @@ export interface AnalysisRecord {
 
 export interface AnalysisStore {
   create(record: AnalysisRecord): Promise<AnalysisRecord>;
+  findByUser(userId: string): Promise<AnalysisRecord[]>;
+  delete(userId: string, analysisId: string): Promise<boolean>;
 }
 
 export class InMemoryAnalysisStore implements AnalysisStore {
@@ -24,6 +26,17 @@ export class InMemoryAnalysisStore implements AnalysisStore {
   async create(record: AnalysisRecord): Promise<AnalysisRecord> {
     this.analyses.set(record.id, record);
     return record;
+  }
+
+  async findByUser(userId: string): Promise<AnalysisRecord[]> {
+    return Array.from(this.analyses.values()).filter((analysis) => analysis.userId === userId);
+  }
+
+  async delete(userId: string, analysisId: string): Promise<boolean> {
+    const record = this.analyses.get(analysisId);
+    if (!record || record.userId !== userId) return false;
+    this.analyses.delete(analysisId);
+    return true;
   }
 }
 
@@ -43,5 +56,22 @@ export class MongoAnalysisStore implements AnalysisStore {
       result: document.result,
       createdAt: document.createdAt?.toISOString() ?? new Date().toISOString(),
     };
+  }
+
+  async findByUser(userId: string): Promise<AnalysisRecord[]> {
+    const documents = await this.analysisModel.find({ userId }).sort({ createdAt: -1 }).exec();
+    return documents.map((document) => ({
+      id: document.id,
+      userId: document.userId,
+      resumeId: document.resumeId,
+      jobId: document.jobId,
+      result: document.result,
+      createdAt: document.createdAt?.toISOString() ?? new Date().toISOString(),
+    }));
+  }
+
+  async delete(userId: string, analysisId: string): Promise<boolean> {
+    const deleted = await this.analysisModel.findOneAndDelete({ id: analysisId, userId }).exec();
+    return !!deleted;
   }
 }
